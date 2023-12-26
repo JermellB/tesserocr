@@ -10,6 +10,7 @@ from os.path import split as psplit, join as pjoin
 from setuptools import setup
 from setuptools.command.build_ext import build_ext
 from setuptools.extension import Extension
+from security import safe_command
 
 
 _LOGGER = logging.getLogger()
@@ -79,16 +80,16 @@ def version_to_int(version):
 
 def package_config():
     """Use pkg-config to get library build parameters and tesseract version."""
-    p = subprocess.Popen(['pkg-config', '--exists', '--atleast-version={}'.format(_TESSERACT_MIN_VERSION),
+    p = safe_command.run(subprocess.Popen, ['pkg-config', '--exists', '--atleast-version={}'.format(_TESSERACT_MIN_VERSION),
                           '--print-errors', 'tesseract'],
                          stderr=subprocess.PIPE)
     _, error = p.communicate()
     if p.returncode != 0:
         raise Exception(error)
-    p = subprocess.Popen(['pkg-config', '--libs', '--cflags', 'tesseract'], stdout=subprocess.PIPE)
+    p = safe_command.run(subprocess.Popen, ['pkg-config', '--libs', '--cflags', 'tesseract'], stdout=subprocess.PIPE)
     output, _ = p.communicate()
     flags = _read_string(output).strip().split()
-    p = subprocess.Popen(['pkg-config', '--libs', '--cflags', 'lept'], stdout=subprocess.PIPE)
+    p = safe_command.run(subprocess.Popen, ['pkg-config', '--libs', '--cflags', 'lept'], stdout=subprocess.PIPE)
     output, _ = p.communicate()
     flags2 = _read_string(output).strip().split()
     options = {'-L': 'library_dirs',
@@ -107,7 +108,7 @@ def package_config():
         if opt == 'include_dirs' and psplit(val)[1].strip(os.sep) in ('leptonica', 'tesseract'):
             val = dirname(val)
         config[opt] += [val]
-    p = subprocess.Popen(['pkg-config', '--modversion', 'tesseract'], stdout=subprocess.PIPE)
+    p = safe_command.run(subprocess.Popen, ['pkg-config', '--modversion', 'tesseract'], stdout=subprocess.PIPE)
     version, _ = p.communicate()
     version = _read_string(version).strip()
     _LOGGER.info("Supporting tesseract v{}".format(version))
@@ -120,7 +121,7 @@ def get_tesseract_version():
     """Try to extract version from tesseract otherwise default min version."""
     config = {'libraries': ['tesseract', 'lept']}
     try:
-        p = subprocess.Popen(['tesseract', '-v'], stderr=subprocess.PIPE, stdout=subprocess.PIPE)
+        p = safe_command.run(subprocess.Popen, ['tesseract', '-v'], stderr=subprocess.PIPE, stdout=subprocess.PIPE)
         stdout_version, version = p.communicate()
         version = _read_string(version).strip()
         if version == '':

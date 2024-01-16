@@ -32,9 +32,8 @@ def read(*parts):
 
 def find_version(*file_paths):
     version_file = read(*file_paths)
-    version_match = re.search(r"^__version__ = ['\"]([^'\"]*)['\"]",
-                              version_file, re.M)
-    if version_match:
+    if version_match := re.search(r"^__version__ = ['\"]([^'\"]*)['\"]",
+                              version_file, re.M):
         return version_match.group(1)
     raise RuntimeError("Unable to find version string.")
 
@@ -122,11 +121,9 @@ def get_tesseract_version():
     try:
         p = subprocess.Popen(['tesseract', '-v'], stderr=subprocess.PIPE, stdout=subprocess.PIPE)
         stdout_version, version = p.communicate()
-        version = _read_string(version).strip()
-        if version == '':
+        if (version := _read_string(version).strip()) == '':
             version = _read_string(stdout_version).strip()
-        version_match = re.search(r'^tesseract ((?:\d+\.)+\d+).*', version, re.M)
-        if version_match:
+        if version_match := re.search(r'^tesseract ((?:\d+\.)+\d+).*', version, re.M):
             version = version_match.group(1)
         else:
             _LOGGER.warn('Failed to extract tesseract version number from: {}'.format(version))
